@@ -1,6 +1,6 @@
 Task: Dual LED and Button Control, using Arduino Uno (ATmega328P)
 
-wokwi link: 
+wokwi link: https://wokwi.com/projects/458958383754918913
 
 Objective
     Create a circuit using two LEDs and two push-buttons. Each pair (LED and button) must operate independently following a specific logic.

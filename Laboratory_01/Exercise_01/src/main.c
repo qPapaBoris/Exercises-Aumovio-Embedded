@@ -20,54 +20,72 @@ typedef enum
 {
   FAST_DELAY = 50,
   SLOW_DELAY = 300
-}BlinkDelay;
+} BlinkDelay;
 
-volatile uint32_t current_ms;
+volatile uint8_t flag_tick;
 
 void init()
 {
   TCCR1A = 0;
-  TCCR1B = (1 << WGM12) | (1 << CS11); // CTC mode, prescaler 8
+  TCCR1B |= (1 << WGM12) | (1 << CS11); // CTC mode, prescaler 8
   OCR1A = 1999;                         // n-1
-  TIMSK1 = (1 << OCIE1A);
+  TIMSK1 |= (1 << OCIE1A);
 
   DDRB |= (1 << LED1) | (1 << LED2);
-  
-  PORTB = (1 << BUTTON1) | (1 << BUTTON2);  // Pull-up button 1 - off, 0 - on / LED: 1 - on, 0 - off
+
+  PORTB |= (1 << BUTTON1) | (1 << BUTTON2);  // Pull-up button 1 - off, 0 - on / LED: 1 - on, 0 - off
 }
 
 ISR(TIMER1_COMPA_vect)
 {
-  current_ms++;
+  flag_tick++;
 }
 
 int main()
 {
   init();
   sei();
-  
+
+  static uint32_t current_ms_led1 = 0;
+  static uint32_t current_ms_led2 = 0;
+
   while (1)
   {
-    static uint32_t last_check_LED1 = 0;
-    static uint32_t last_check_LED2 = 0;
-
-    if (!(PINB & (1 << BUTTON1)))
+    if (flag_tick)
     {
-      if (current_ms - last_check_LED1 >= FAST_DELAY)
+      flag_tick--;
+
+      if (!(PINB & (1 << BUTTON1)))
       {
-        last_check_LED1 = current_ms;
-        PORTB ^= (1 << LED1);
+        current_ms_led1++;
+
+        if (current_ms_led1 >= FAST_DELAY)
+        {
+          current_ms_led1 = 0;
+          PORTB ^= (1 << LED1);
+        }
       }
-    }
-
-    if (!(PINB & (1 << BUTTON2)))
-    {
-      if (current_ms - last_check_LED2 >= SLOW_DELAY)
+      else
       {
-        last_check_LED2 = current_ms;
-        PORTB ^= (1 << LED2);
+        current_ms_led1 = 0;
+        PORTB &= ~(1 << LED1);
+      }
+
+      if (!(PINB & (1 << BUTTON2)))
+      {
+        current_ms_led2++;
+
+        if (current_ms_led2 >= SLOW_DELAY)
+        {
+          current_ms_led2 = 0;
+          PORTB ^= (1 << LED2);
+        }
+      }
+      else
+      {
+        current_ms_led2 = 0;
+        PORTB &= ~(1 << LED2);
       }
     }
   }
-  return 0;
 }
